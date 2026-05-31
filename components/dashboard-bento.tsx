@@ -1,7 +1,8 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, BookOpen, ChevronLeft, Clock3, Flame, Grid2x2, LayoutDashboard, Menu, Settings, Sparkles, TrendingUp, X } from 'lucide-react';
+import { BadgeCheck, BookOpen, ChevronLeft, Clock3, Flame, Grid2x2, LayoutDashboard, Menu, Settings, Sparkles, TrendingUp, X, Star } from 'lucide-react';
+import Tooltip from '@/components/ui/tooltip';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -42,13 +43,31 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(() => getInitialTab(urlTab ?? initialTab));
   const featuredCourse = courses[0];
-  // local alias to make the code read like a person wrote it
-  const courseList = courses;
-  // mixing styles: sometimes I refer to the list as userData, sometimes as user_info
-  // hacky: leave both around so the code shows gradual development
-  const userData = courseList;
-  const user_info = courseList;
+  const coursesData = courses;
   const FeaturedIcon = featuredCourse ? resolveCourseIcon(featuredCourse.icon_name) : null;
+  const [favorites, setFavorites] = useState<string[]>(() => []);
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('favorites');
+      if (raw) setFavorites(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function toggleFavorite(id: string) {
+    setFavorites((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem('favorites', JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }
 
   useEffect(() => {
     setActiveTab(getInitialTab(urlTab ?? initialTab));
@@ -71,20 +90,21 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
   }, [activity]);
 
   // map to tile view — small readable name change
-  const courseTiles = useMemo(() => courseList.map((course, index) => ({
-    course,
-    icon: resolveCourseIcon(course.icon_name),
-    spanClassName: courseTileSpans[index % courseTileSpans.length],
-  })), [courseList]);
+  const courseTiles = useMemo(() => {
+    const favoritesSet = new Set(favorites);
+    const filtered = showOnlyFavorites ? coursesData.filter((c) => favoritesSet.has(c.id)) : coursesData;
+    return filtered.map((course, index) => ({
+      course,
+      icon: resolveCourseIcon(course.icon_name),
+      spanClassName: courseTileSpans[index % courseTileSpans.length],
+      isFavorite: favoritesSet.has(course.id),
+    }));
+  }, [coursesData, favorites, showOnlyFavorites]);
 
   // old attempt - kept commented out intentionally
   // const tiles = courses.map((c) => makeTile(c));
 
-  // small unused helper left as a sign of iterative work
-  function legacyFormatName(n: string) {
-    // TODO: revisit name formatting rules
-    return n.trim();
-  }
+  // removed unused legacy formatter during cleanup
 
   function handleTabChange(tabId: string) {
     setActiveTab(tabId);
@@ -120,13 +140,15 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
                   )}
                 </AnimatePresence>
               </div>
-              <button
-                onClick={() => setCollapsed((value) => !value)}
-                className="hidden h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 lg:grid"
-                aria-label="Toggle sidebar"
-              >
-                <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
-              </button>
+              <Tooltip content={collapsed ? 'Show sidebar — Peek at your tools' : 'Hide sidebar — More screen for content'} placement="left">
+                <button
+                  onClick={() => setCollapsed((value) => !value)}
+                  className="hidden h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 lg:grid"
+                  aria-label="Toggle sidebar"
+                >
+                  <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+                </button>
+              </Tooltip>
             </div>
 
             <nav className={`mt-8 space-y-2 transition-opacity duration-200 ${collapsed ? 'lg:opacity-100' : 'lg:opacity-100'}`}>
@@ -151,7 +173,7 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
                     className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-3 py-3 text-left transition-opacity md:justify-center lg:justify-start ${
                       isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                     }`}
-                    title={item.label}
+                    title={`${item.label} — ${item.hint}`}
                   >
                     {isActive && (
                       <motion.div
@@ -187,10 +209,10 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
 
             <div className="mt-auto rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-4">
               <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Streak</p>
-              <div className="mt-3 flex items-end justify-between gap-3">
+                <div className="mt-3 flex items-end justify-between gap-3">
                 <div>
                   <p className="text-3xl font-semibold text-white">{stats.streak}</p>
-                  <p className="text-sm text-slate-400">days of momentum</p>
+                  <p className="text-sm text-slate-400" title="Keep your streak alive — one block at a time">days of momentum</p>
                 </div>
                 <div className="rounded-2xl bg-cyan-400/10 p-3 text-cyan-300 ring-1 ring-cyan-300/15">
                   <Flame className="h-5 w-5" />
@@ -204,14 +226,31 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
           <div>
             <p className="text-[10px] uppercase tracking-[0.35em] text-cyan-300/80">Student Dashboard</p>
             <p className="mt-1 text-sm text-slate-300">{viewerName}</p>
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mt-1 text-xs text-slate-400"
+            >
+              Keep going — small wins add up ✨
+            </motion.p>
           </div>
-          <button
-            onClick={() => setMobileNavOpen((value) => !value)}
-            className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/5 text-white"
-            aria-label="Toggle navigation"
-          >
-            {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowOnlyFavorites((v) => !v)}
+              className={`grid h-9 w-9 place-items-center rounded-2xl border border-white/10 transition ${showOnlyFavorites ? 'bg-yellow-400/10 text-yellow-300' : 'bg-white/5 text-white'}`}
+              aria-label="Toggle favorites filter"
+            >
+              <Star className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setMobileNavOpen((value) => !value)}
+              className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/5 text-white"
+              aria-label="Toggle navigation"
+            >
+              {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
         <AnimatePresence>
@@ -364,8 +403,8 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
               </motion.article>
 
                 {courseTiles.length > 0 ? (
-                  courseTiles.map(({ course, icon, spanClassName }, index) => (
-                    <CourseCard key={course.id} course={course} icon={icon} delay={index * 0.08} compact className={spanClassName} />
+                  courseTiles.map(({ course, icon, spanClassName, isFavorite }, index) => (
+                    <CourseCard key={course.id} course={course} icon={icon} delay={index * 0.08} compact className={spanClassName} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
                   ))
                 ) : (
                   <EmptyCoursesState
@@ -395,15 +434,24 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
                     <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Courses</p>
                     <h2 className="mt-2 text-2xl font-semibold text-white">Your active learning tracks</h2>
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100">
-                    <BookOpen className="h-4 w-4" />
-                    {courses.length} active courses
+                  <div className="inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100">
+                      <BookOpen className="h-4 w-4" />
+                      {courses.length} active courses
+                    </div>
+                    <button
+                      onClick={() => setShowOnlyFavorites((v) => !v)}
+                      className={`grid h-9 w-9 place-items-center rounded-2xl border border-white/10 transition ${showOnlyFavorites ? 'bg-yellow-400/10 text-yellow-300' : 'bg-white/5 text-cyan-100'}`}
+                      aria-label="Toggle favorites filter"
+                    >
+                      <Star className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               </motion.article>
               {courseTiles.length > 0 ? (
-                courseTiles.map(({ course, icon }, index) => (
-                  <CourseCard key={course.id} course={course} icon={icon} delay={index * 0.06} className="md:col-span-1 lg:col-span-4" />
+                courseTiles.map(({ course, icon, isFavorite }, index) => (
+                  <CourseCard key={course.id} course={course} icon={icon} delay={index * 0.06} className="md:col-span-1 lg:col-span-4" isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
                 ))
               ) : (
                 <EmptyCoursesState

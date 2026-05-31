@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Star } from 'lucide-react';
+import Tooltip from '@/components/ui/tooltip';
 import type { Course } from '@/lib/types';
 
 type CourseCardProps = {
@@ -11,17 +12,16 @@ type CourseCardProps = {
   delay?: number;
   compact?: boolean;
   className?: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
 };
 
-export function CourseCard({ course, icon: Icon, delay = 0, compact = false, className = '' }: CourseCardProps) {
+export function CourseCard({ course, icon: Icon, delay = 0, compact = false, className = '', isFavorite = false, onToggleFavorite }: CourseCardProps) {
   const createdDate = new Date(course.created_at).toISOString().slice(0, 10);
   const statusLabel = course.progress >= 100 ? 'Completed' : compact ? 'Active' : 'In progress';
   // small local rename to feel like a dev wrote this casually
   const pct = course.progress; // pct stands for percentage
   // tried using a helper here earlier: // const prettyProgress = formatPct(pct);
-  // some devs might also write this differently in other files
-  const percentage = pct; // another alias
-  const percntage = percentage; // small typo variant left unused intentionally
 
   return (
     <motion.article
@@ -44,13 +44,27 @@ export function CourseCard({ course, icon: Icon, delay = 0, compact = false, cla
             <h3 className={`mt-1 break-words font-semibold text-white ${compact ? 'text-base' : 'text-lg'}`}>{course.title}</h3>
           </div>
         </div>
-        <ArrowUpRight className="h-5 w-5 text-slate-500 transition duration-300 group-hover:text-cyan-300" />
+        <div className="flex items-center gap-2">
+          <Tooltip content={isFavorite ? 'Unfavorite — I get it, moving on' : 'Favorite — saved for later ❤️'} placement="top">
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              animate={isFavorite ? { scale: 1.04 } : { scale: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(course.id); }}
+              aria-label={isFavorite ? 'Unfavorite course' : 'Favorite course'}
+              className={`grid h-9 w-9 place-items-center rounded-full transition ${isFavorite ? 'bg-yellow-400/15 text-yellow-300 ring-1 ring-yellow-300/20' : 'bg-white/5 text-slate-400 ring-1 ring-white/[0.06]'}`}
+            >
+              <Star className="h-4 w-4" />
+            </motion.button>
+          </Tooltip>
+          <ArrowUpRight className="h-5 w-5 text-slate-500 transition duration-300 group-hover:text-cyan-300" />
+        </div>
       </div>
 
       <div className={compact ? 'mt-4' : 'mt-5'}>
         <div className="mb-2 flex items-center justify-between text-xs text-slate-400 sm:text-sm">
-          <span>Progress</span>
-          <span>{pct}%</span>
+          <span title={`Progress: ${pct}% — you're doing great!`}>Progress</span>
+          <span title={`Progress: ${pct}%`}>{pct}%</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-white/[0.08]">
           <motion.div

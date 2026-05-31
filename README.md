@@ -59,7 +59,7 @@ Hey — quick informal note about this project from someone who actually worked 
 - What I learned: keep server-side helpers small and explicit, and prefer returning empty arrays instead of silently showing demo data — that led to clearer UX.
 - One thing I'd improve: add a small seed/restore button in the UI so non-technical users can repopulate the courses table quickly during demos.
 
-I left a couple of TODO comments in the code where a future me (or you) might add toggles or small helpers. This repo isn't perfect — that's intentional. It's human work, not a robot. :) 
+I left a couple of TODO comments in the code where a future me (or you) might add toggles or small helpers.
 
 ## Environment example
 
