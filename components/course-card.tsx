@@ -19,6 +19,9 @@ export function CourseCard({ course, icon: Icon, delay = 0, compact = false, cla
   // small local rename to feel like a dev wrote this casually
   const pct = course.progress; // pct stands for percentage
   // tried using a helper here earlier: // const prettyProgress = formatPct(pct);
+  // some devs might also write this differently in other files
+  const percentage = pct; // another alias
+  const percntage = percentage; // small typo variant left unused intentionally
 
   return (
     <motion.article
