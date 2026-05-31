@@ -60,3 +60,20 @@ Hey — quick informal note about this project from someone who actually worked 
 - One thing I'd improve: add a small seed/restore button in the UI so non-technical users can repopulate the courses table quickly during demos.
 
 I left a couple of TODO comments in the code where a future me (or you) might add toggles or small helpers. This repo isn't perfect — that's intentional. It's human work, not a robot. :) 
+
+## Environment example
+
+A `.env.example` file has been added to the repository with the public Supabase variables required by this app. Copy it to `.env.local` and fill in your project values. Do NOT commit your real `.env.local` or `.env` files.
+
+## Architecture & Server/Client split
+
+- **Framework**: Next.js App Router with Server Components by default. Server Components are used for data fetching and initial rendering to keep the client bundle small.
+- **Server components**: Data fetching and Supabase queries live in server-side helpers (see `lib/dashboard.ts`). These run on the server and use the public anon key for read-only `SELECT` access. Keeping these on the server avoids shipping fetch logic and reduces client complexity.
+- **Client components**: Interactive UI, animations (Framer Motion), and any component that uses `useState`/`useEffect` are implemented as client components and marked with `use client` where required. Client components receive already-fetched data from parent Server Components.
+- **Data strategy**: Server helpers return explicit, small shapes (arrays/objects) and return empty arrays on error to avoid rendering demo or fallback data inadvertently.
+
+## Challenges & notes
+
+- Wiring Supabase into Server Components securely without exposing secrets required careful use of the public anon key and small server helpers.
+- Kept client bundles minimal by moving data-heavy logic to server components and only marking truly interactive UI as client.
+- On Windows there was a `.next` readlink issue encountered during development; be mindful of build artifacts and, if necessary, clear `.next` when debugging build or dev server problems.
