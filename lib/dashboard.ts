@@ -1,5 +1,5 @@
 import type { Course, ActivityDay, DashboardStats } from '@/lib/types';
-import { createSupabaseClient, createSupabaseServerClient } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase';
 
 export type DashboardData = {
   courses: Course[];
@@ -17,7 +17,7 @@ const demoCourses: Course[] = [
 ];
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const supabase = createSupabaseClient();
+  const supabase = await createSupabaseServerClient();
   const viewerName = await resolveViewerName();
 
   if (!supabase) {
