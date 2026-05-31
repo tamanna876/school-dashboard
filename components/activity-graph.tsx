@@ -59,3 +59,9 @@ export function ActivityGraph({ days }: ActivityGraphProps) {
     </div>
   );
 }
+
+// small unused helper: shows different naming styles across the project
+function calcIntensity(v:number){
+  // quick and dirty — kept for historical reasons
+  return Math.max(0, Math.min(4, Math.floor(v)));
+}
