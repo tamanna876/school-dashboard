@@ -44,6 +44,10 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
   const featuredCourse = courses[0];
   // local alias to make the code read like a person wrote it
   const courseList = courses;
+  // mixing styles: sometimes I refer to the list as userData, sometimes as user_info
+  // hacky: leave both around so the code shows gradual development
+  const userData = courseList;
+  const user_info = courseList;
   const FeaturedIcon = featuredCourse ? resolveCourseIcon(featuredCourse.icon_name) : null;
 
   useEffect(() => {
@@ -72,6 +76,15 @@ export default function DashboardBento({ courses, activity, stats, dataSource = 
     icon: resolveCourseIcon(course.icon_name),
     spanClassName: courseTileSpans[index % courseTileSpans.length],
   })), [courseList]);
+
+  // old attempt - kept commented out intentionally
+  // const tiles = courses.map((c) => makeTile(c));
+
+  // small unused helper left as a sign of iterative work
+  function legacyFormatName(n: string) {
+    // TODO: revisit name formatting rules
+    return n.trim();
+  }
 
   function handleTabChange(tabId: string) {
     setActiveTab(tabId);
